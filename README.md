@@ -6,7 +6,7 @@ This repository showcases two Streamlit applications that demonstrate how to bui
 - **Product Review Search**: Upload and semantically search product reviews using CSV data.
 - **Resume Matching**: Upload and semantically match resumes using PDF documents.
 
-Both apps allow users to generate embeddings, store/query them in Azure SQL DB, and perform LLM-powered Q&A for intelligent retrieval and recommendations.
+Both apps allow users to generate embeddings, store/query them in Azure SQL DB, and perform LLM-powered Q&A for intelligent retrieval and recommendations.  
 These demo follow the Jupyter notebook provided in the [azure-sql-db-vector-search repo](https://github.com/Azure-Samples/azure-sql-db-vector-search/tree/main) under the Azure-Samples GitHub repo. 
 
 ---
