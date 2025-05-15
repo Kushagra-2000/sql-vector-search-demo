@@ -1,4 +1,4 @@
-# RAG Resume Matcher Streamlit App with Azure SQL DB, Document Intelligence, and OpenAI
+# RAG Streamlit App with Azure SQL DB on Structured Dataset
 
 ## Objective
 This Streamlit app demonstrates how to build a Retrieval-Augmented Generation (RAG) solution for resume matching using Azure SQL Database's native vector capabilities, Azure Document Intelligence, and Azure OpenAI. The app enables users to upload PDF resumes, extract and chunk their content, generate embeddings, store/query them in Azure SQL DB, and perform LLM-powered Q&A for candidate search and recommendations.
@@ -13,7 +13,7 @@ This Streamlit app demonstrates how to build a Retrieval-Augmented Generation (R
 - **Simplistic UI:** Interactive, step-by-step workflow with persistent results and clear progress indicators.
 
 ## Prerequisites
-- **Azure Subscription** - Azure Free Trial subscription or Azure for Students would also work
+- **Azure Subscription** - Azure Free Trial subscription or Azure for Students subscription would also work
 - **Python 3.8+**
 - **Required Python packages** (see `requirements.txt`)
 - **ODBC Driver 18+ for SQL Server** (for pyodbc)
@@ -25,11 +25,12 @@ This Streamlit app demonstrates how to build a Retrieval-Augmented Generation (R
 - Azure OpenAI Service
 - Streamlit
 - Python (pandas, tiktoken, pyodbc, etc.)
-- SQL Database on Fabric (an alternative to Azure SQL Database)
+- SQL Database on Fabric *(an alternative to Azure SQL Database)*
 
 ## Automated Deployments
 - **ARM Template Scripts:**
-    - ARM templates are provided separately to automate the deployment of required resources. Please refer to [this repository](https://github.com/Kushagra-2000/ARM_SQL_OpenAI) for scripts and detailed instructions. Follow the RAG for Unstructured Docs for this particular demo.
+    - ARM templates are provided separately to automate the deployment of required resources. Please refer to [this repository](https://github.com/Kushagra-2000/ARM_SQL_OpenAI) for scripts and detailed instructions. 
+    - Follow the RAG for Unstructured Docs for this particular demo.
 - **SQL on Fabric:**
     - Create a workspace in Fabric, if not existed before.
     - New Item > SQL Database (preview) > Provide DB name > Create
@@ -63,9 +64,8 @@ This Streamlit app demonstrates how to build a Retrieval-Augmented Generation (R
   - Verify API keys and endpoints for Azure services.
 - **Table Creation Issues:**
   - Confirm your user has permissions to create tables in the target database.
-  - If using database for the first time or it is in Paused state, try creating table again after the DB is Running state - it would take 1-2 mins to be ready if in paused state
+  - If using database for the first time or it is in Paused state, try creating table again after the DB is Running state - it would take 1-2 mins for DB to be ready, if in paused state.
 - **Embedding/Vector Errors:**
-  - Ensure the VECTOR data type is enabled in your Azure SQL DB (preview feature).
   - Use the correct double-casting in SQL queries as shown in the app.
 - **Performance:**
   - Large PDFs or many files may take time to process and embed. Monitor resource usage.
