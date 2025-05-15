@@ -38,6 +38,32 @@ This includes ARM templates to provision:
 
 ---
 
+## What Next?
+
+Once you've successfully deployed and explored the Streamlit applications, here are some next steps to deepen your understanding and expand your solution:
+
+- **Explore the Jupyter Notebook Project**: Visit the companion GitHub repository that includes Jupyter notebooks to:
+  - Understand the underlying code and logic behind embedding generation, vector storage, and querying.
+  - Experiment with different datasets and prompts.
+  - Learn how to customize the pipeline for your own use case.
+  - Checkout implementation using Semantic Kernel or LangChain.
+
+- **Dive into Azure Portal**:
+  - Monitor and manage your deployed resources.
+  - Explore Azure SQL DB’s vector capabilities and performance tuning.
+  - Review usage metrics and cost estimations.
+
+- **Customize the Apps**: Modify the Streamlit apps to:
+  - Add new data sources (e.g., JSON, web scraping).
+  - Enhance the UI/UX for specific business scenarios.
+    
+- **Build Your Own Use Case**:
+  - Use Azure SQL DB or SQL on Fabric as your vector store.
+  - Design a RAG solution tailored to your domain—be it legal, healthcare, customer support, or internal knowledge bases.
+  - Share your solution with the community.
+
+---
+
 ## 📚 Resources
 
 - [Azure SQL DB Vector Support](https://devblogs.microsoft.com/azure-sql/eap-for-vector-support-refresh-introducing-vector-type/)
