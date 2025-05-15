@@ -33,12 +33,8 @@ This includes ARM templates to provision:
 - Azure Document Intelligence (for resume app)
 
 ### Steps to Deploy SQL DB on Fabric
-1. **Provision SQL on Fabric**: Follow Microsoft Fabric documentation to set up SQL on Fabric.
-2. **Deploy Azure Resources**: Use ARM templates or Azure Portal to deploy required services.
-3. **Configure Credentials**: Enter Fabric endpoints, API keys, and SQL connection string in the app sidebar.
-4. **Create Table**: Use the app UI to create the required table in SQL DB on Fabric.
-5. **Upload Data**: Upload CSV or PDF data depending on the app.
-6. **Process & Query**: Generate embeddings, store them, and perform semantic search and Q&A.
+- Create a workspace in Fabric, if not existed before.
+- New Item > SQL Database (preview) > Provide DB name > Create
 
 ---
 
