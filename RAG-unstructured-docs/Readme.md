@@ -10,32 +10,29 @@ This Streamlit app demonstrates how to build a Retrieval-Augmented Generation (R
 - **Vector Storage in Azure SQL DB:** Store embeddings in Azure SQL DB using the new VECTOR data type for efficient similarity search.
 - **Vector Search:** Query the database for the most relevant resume chunks based on a user query using built-in vector distance functions.
 - **LLM Q&A:** Augment search results with GPT-4.1-based recommendations and summaries, grounded in the retrieved data.
-- **Modern UI:** Interactive, step-by-step workflow with persistent results and clear progress indicators.
-
-## Target End Users
-- Recruiters and HR professionals seeking AI-powered candidate search.
-- Data scientists and engineers building RAG or vector search solutions on Azure.
-- Solution architects and technical decision makers evaluating Azure's vector and AI capabilities.
+- **Simplistic UI:** Interactive, step-by-step workflow with persistent results and clear progress indicators.
 
 ## Prerequisites
-- **Azure Subscription**
-- **Azure SQL Database** (with vector support enabled)
-- **Azure Document Intelligence Resource**
-- **Azure OpenAI Resource** (with embedding and GPT-4.1 models deployed)
+- **Azure Subscription** - Azure Free Trial subscription or Azure for Students would also work
 - **Python 3.8+**
 - **Required Python packages** (see `requirements.txt`)
 - **ODBC Driver 18+ for SQL Server** (for pyodbc)
+- **Fabric Subscription** (Optional)
 
 ## Products & Services Used
-- Azure SQL Database (VECTOR data type)
+- Azure SQL Database 
 - Azure Document Intelligence (Form Recognizer)
 - Azure OpenAI Service
 - Streamlit
 - Python (pandas, tiktoken, pyodbc, etc.)
+- SQL Database on Fabric (an alternative to Azure SQL Database)
 
 ## Automated Deployments
 - **ARM Template Scripts:**
-    - ARM templates are provided separately to automate the deployment of Azure SQL DB, Document Intelligence, and OpenAI resources. Please refer to the `Assets/` or deployment folder for scripts and instructions.
+    - ARM templates are provided separately to automate the deployment of required resources. Please refer to [this repository](https://github.com/Kushagra-2000/ARM_SQL_OpenAI) for scripts and detailed instructions. Follow the RAG for Unstructured Docs for this particular demo.
+- **SQL on Fabric:**
+    - Create a workspace in Fabric, if not existed before.
+    - New Item > SQL Database (preview) > Provide DB name > Create
 
 ## Steps to Execute
 1. **Clone the Repository**
@@ -45,20 +42,20 @@ This Streamlit app demonstrates how to build a Retrieval-Augmented Generation (R
    ```
 3. **Deploy Azure Resources:**
    - Use the provided ARM templates or Azure Portal to deploy SQL DB, Document Intelligence, and OpenAI resources.
-4. **Configure Credentials:**
+   - Setup SQL on Fabric if using that as the database
+4. **Setup Firewall Configuration:** (Skip this step if using SQL on Fabric)
+   - Configure the firewall settings for the SQL server separately to allow access from your client IP addresses.
+   - Go to the deployed SQL Server in the Azure Portal.
+   - Navigate to Security > Networking > Virtual networks.
+   - Add your client IP and click Save.
+5. **Configure Credentials:**
    - Launch the app and enter your Azure endpoints, API keys, and SQL connection string in the sidebar.
-5. **Create Table:**
-   - Use the UI to create the `resumedocs` table in your Azure SQL DB if it does not exist.
-6. **Upload Resumes:**
-   - Upload one or more PDF resumes.
-7. **Process & Chunk:**
-   - The app will extract and chunk text from each PDF.
-8. **Generate Embeddings:**
-   - Click to generate embeddings for all chunks.
-9. **Insert into SQL DB:**
-   - Store the embeddings in the Azure SQL DB vector table.
-10. **Query & Q&A:**
-    - Enter a role or skill to find candidates and get LLM-powered recommendations.
+   - Credentials for Document Intelligence: Document Intelligence resource > Overview > Keys and endpoint
+   - Credentials for OpenAI: OpenAI resource > Overview > Develop > Keys and endpoint
+   - Connection String for Azure SQL DB: Azure SQL DB resource > Overview > Show database connection strings > ODBC > {Change Pwd parameter with your admin password set during deployment}
+   - Connection String for SQL on Fabric: SQL DB > Settings > Connection Strings > ODBC > Copy string as it is > Authentication window would pop-up > Provide authentication details
+6. **App is Up & Ready:**
+   - Upload [resume docs](https://www.kaggle.com/datasets/snehaanbhawal/resume-dataset) or upload your own docs and query upon them to see action of RAG in real-time
 
 ## Troubleshooting
 - **Connection Errors:**
@@ -66,6 +63,7 @@ This Streamlit app demonstrates how to build a Retrieval-Augmented Generation (R
   - Verify API keys and endpoints for Azure services.
 - **Table Creation Issues:**
   - Confirm your user has permissions to create tables in the target database.
+  - If using database for the first time or it is in Paused state, try creating table again after the DB is Running state - it would take 1-2 mins to be ready if in paused state
 - **Embedding/Vector Errors:**
   - Ensure the VECTOR data type is enabled in your Azure SQL DB (preview feature).
   - Use the correct double-casting in SQL queries as shown in the app.
@@ -82,5 +80,3 @@ This Streamlit app demonstrates how to build a Retrieval-Augmented Generation (R
 - [Project GitHub Repository](https://github.com/Azure-Samples/azure-sql-db-vector-search/tree/main/RAG-with-Documents)
 
 ---
-
-**For any additional questions or to contribute, please refer to the main project README or open an issue in the repository.**
