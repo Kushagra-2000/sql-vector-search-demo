@@ -50,9 +50,9 @@ This Streamlit app demonstrates how to build a Retrieval-Augmented Generation (R
    - Add your client IP and click Save.
 5. **Run the Streamlit App:**
    - Navigate to the cloned repository destination and then run the below command to start the app on `localhost:8501`
-     ```
-     streamlit run streamlit_app.py
-     ```
+   ```
+   streamlit run streamlit_app.py
+   ```
 6. **Configure Credentials:**
    - Launch the app and enter your Azure endpoints, API keys, and SQL connection string in the sidebar.
    - Credentials for Document Intelligence: Document Intelligence resource > Overview > Keys and endpoint
