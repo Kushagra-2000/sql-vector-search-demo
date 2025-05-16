@@ -56,7 +56,7 @@ This Streamlit app demonstrates how to build a Retrieval-Augmented Generation (R
    - Connection String for Azure SQL DB: Azure SQL DB resource > Overview > Show database connection strings > ODBC > {Change Pwd parameter with your admin password set during deployment}
    - Connection String for SQL on Fabric: SQL DB > Settings > Connection Strings > ODBC > Copy string as it is > Authentication window would pop-up > Provide authentication details
 6. **App is Up & Ready:**
-   - Command Prompt: Navigate to the cloned repository destination and then run the below command to start the streeamlit app on `localhost:8501`
+   - Command Prompt: Navigate to the cloned repository destination and then run the below command to start the app on `localhost:8501`
      ```
      streamlit run streamlit_unstructured.py
      ```
