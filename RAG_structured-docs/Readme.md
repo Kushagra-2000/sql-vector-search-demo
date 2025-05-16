@@ -48,19 +48,20 @@ This Streamlit app demonstrates how to build a Retrieval-Augmented Generation (R
    - Go to the deployed SQL Server in the Azure Portal.
    - Navigate to Security > Networking > Virtual networks.
    - Add your client IP and click Save.
-5. **Configure Credentials:**
+5. **Run the Streamlit App:**
+   - Navigate to the cloned repository destination and then run the below command to start the app on `localhost:8501`
+     ```
+     streamlit run streamlit_app.py
+     ```
+6. **Configure Credentials:**
    - Launch the app and enter your Azure endpoints, API keys, and SQL connection string in the sidebar.
-   - *Credentials for Document Intelligence*: Document Intelligence resource > Overview > Keys and endpoint
-   - *Credentials for OpenAI*: OpenAI resource > Overview > Develop > Keys and endpoint
-   - *Connection String for Azure SQL DB*: Azure SQL DB resource > Overview > Show database connection strings > ODBC > {Change Pwd parameter with your admin password set during deployment}
-   - *Connection String for SQL on Fabric*: SQL DB > Settings > Connection Strings > ODBC > Copy string as it is > Authentication window would pop-up > Provide authentication details
-6. **App is Up & Ready:**
-   - While launching the app from local - give the additional upload parameter to increase the upload file datasize:
-     ```
-     streamlit run streamlit_app.py --server.maxUploadSize 500
-     ```
+   - Credentials for Document Intelligence: Document Intelligence resource > Overview > Keys and endpoint
+   - Credentials for OpenAI: OpenAI resource > Overview > Develop > Keys and endpoint
+   - Connection String for Azure SQL DB: Azure SQL DB resource > Overview > Show database connection strings > ODBC > {Change Pwd parameter with your admin password set during deployment}
+   - Connection String for SQL on Fabric: SQL DB > Settings > Connection Strings > ODBC > Copy string as it is > Authentication window would pop-up > Provide authentication details
+7. **Talk to your docs:**
    - Refer to the following datasets for use. It contains both the reviews csv file and embeddings csv file.
-   - [Datasets](https://github.com/Azure-Samples/azure-sql-db-vector-search/tree/main/Datasets)
+     [Datasets](https://github.com/Azure-Samples/azure-sql-db-vector-search/tree/main/Datasets)
 
 
 ## Troubleshooting
