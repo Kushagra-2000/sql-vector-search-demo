@@ -22,10 +22,10 @@ These demo follow the Jupyter notebook provided in the [azure-sql-db-vector-sear
 
 ---
 
-## Deployment
+## Resources Deployment
 
 ### One Click Deployment
-Automated deployment scripts are available in a separate [GitHub repository](https://github.com/Kushagra-2000/ARM_SQL_OpenAI):
+Automated deployment scripts are available in a separate [GitHub repository](https://github.com/Kushagra-2000/ARM_SQL_OpenAI) that will help to deploy required component.
 
 This includes ARM templates to provision:
 - Azure SQL DB
@@ -35,6 +35,22 @@ This includes ARM templates to provision:
 ### Steps to Deploy SQL DB on Fabric
 - Create a workspace in Fabric, if not existed before.
 - New Item > SQL Database (preview) > Provide DB name > Create
+
+---
+
+## Run the Application
+
+1. Clone the Repository
+2. Navigate to corresponding repository depending upon structured or unstructured dataset.
+3. Deploy required resources with one click deployment templates.
+4. Install requirements
+   ```
+   pip install -r requirements.txt
+   ```
+5. Run Streamlit App
+   ```
+   streamlit run <filename.py>
+   ```
 
 ---
 
