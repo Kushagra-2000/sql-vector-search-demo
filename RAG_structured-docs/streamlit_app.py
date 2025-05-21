@@ -37,6 +37,7 @@ with st.sidebar:
     st.text_input("Azure OpenAI Endpoint", placeholder="https://<your-resource-name>.openai.azure.com/", key="openai_endpoint")
     st.text_input("Azure OpenAI API Key", type="password", key="openai_api_key")
     st.text_input("Embedding Model Deployment Name", placeholder="text-embedding-3-small", key="embedding_model")
+    st.text_input("Chat Completion Model Name", placeholder="gpt-4.1", key="gpt-4.1")
 
 # Automatically expand the sidebar when the user visits the site
 st.sidebar.markdown("<style>.sidebar .sidebar-content {width: 300px;}</style>", unsafe_allow_html=True)
@@ -45,7 +46,7 @@ st.sidebar.markdown("<style>.sidebar .sidebar-content {width: 300px;}</style>", 
 st.title("Retrieval-Augmented Generation with Azure SQL and OpenAI")
 
 # Add a subheader below the title with dataset information and link
-st.write("In this tutorial we will be using the [Fine Foods Review Dataset](https://www.kaggle.com/datasets/snap/amazon-fine-food-reviews), " \
+st.write("In this tutorial we will be using the [Fine Foods Review Dataset](https://www.kaggle.com/datasets/pookam90/fine-food-reviews-with-embeddings?resource=download), " \
 "process it in dataframe, generate its embeddings, store/query in Azure SQL DB, and perform Q&A using LLM. For detailed explanation, " \
 "please refer to the [GitHub repo](https://github.com/Azure-Samples/azure-sql-db-vector-search/tree/main/Retrieval-Augmented-Generation).")
 st.markdown("**Note:** This is a demo app. Please do not use it for production purposes. The credentials are stored in session state and are not secure. ")
@@ -106,7 +107,7 @@ with st.expander("**Table Creation Process**"):
             [Summary] [nvarchar](max) NULL,
             [Text] [nvarchar](max) NULL,
             [Combined] [nvarchar](max) NULL,
-            [Vector] [vector](1536) NULL
+            '[Vector] [vector](1536) NULL'
         )
     END
     """)
@@ -148,6 +149,11 @@ if st.button("Create Table"):
 # Section 2: Upload and Process Dataset
 st.subheader("Step 2: Upload and Process Dataset")
 
+with st.expander("**About Dataset**"):
+    st.markdown("The dataset is about the customer reviews dataset from FineFoods and enriching it with embeddings generated via the `text-embedding-3-small` Azure OpenAI model. " \
+    "The embeddings will be generated using the concatenation of `Summary + Text` field. Imagine a user asks, “What's the best coffee?” We'll transform their query into a vector and search our database of reviews to extract all products that are similar to provided question.")
+    st.markdown("You can find the sample dataset here: [GitHub](https://github.com/Azure-Samples/azure-sql-db-vector-search/blob/main/Datasets). Check out the **reviews.csv** file for this step. ")
+
 with st.expander("**Dataset Processing**"):
     st.markdown("Next we'll perform some light data cleaning on the uploaded reviews dataset by removing redundant whitespace and cleaning up the punctuation to prepare the data for tokenization." \
     " We will also remove comments that are too long for the token limit (8192 tokens - the maximum length of input text for the Azure OpenAI embedding models). When faced with content that exceeds the embedding limit, you can also chunk the content into smaller pieces and then embed those one at a time. You can read more about data chunking [here](https://learn.microsoft.com/en-us/azure/search/vector-search-how-to-chunk-documents)")
@@ -182,7 +188,8 @@ with st.expander("**What are Embeddings ?**"):
     - If two pieces of text are semantically similar, their vector representations will also be close to each other.
     - Conversely, dissimilar texts will have embeddings that are farther apart in the vector space.
                 
-    We will now generate the embeddings for the 'combined' column using the defined `get_embeddings` function that leverages the Azure OpenAI `text-embedding-small` model.
+    We will now generate the embeddings for the **combined** column (*Product summary + Review*) using the defined `get_embeddings` function that leverages the Azure OpenAI `text-embedding-3-small` model.
+    Since the embedding generation process can be time-consuming, we will only generate embeddings for the *first 10 rows* of the dataset for demonstration purposes.
     """)
 
 def get_embedding(text):
@@ -224,16 +231,13 @@ st.subheader("Step 4: Upload Pre-Generated Embeddings")
 
 with st.expander("**Vector Embedding Storage in Azure SQL Database**"):
     st.markdown("""
-    Let's import 'finefoodembeddings.csv' which contains embeddings for the entire dataset calculated in the same manner as above, directly to the SQL table      
+    Let's import **finefoodembeddings.csv** ([GitHub](https://github.com/Azure-Samples/azure-sql-db-vector-search/blob/main/Datasets/FineFoodEmbeddings.csv) / [Kaggle](https://www.kaggle.com/datasets/pookam90/fine-food-reviews-with-embeddings?resource=download)) which contains embeddings for the entire dataset calculated in the same manner as above, directly to the SQL table      
 
     We will insert our vectors into the SQL Table now. The table embeddings has a column called **vector** which is vector(1536) type.
 
     We will pass the vectors by converting a JSON array to a compact **binary** representation of a vector. Vectors are stored in an efficient binary format that also enables usage of dedicated CPU vector processing extensions like SIMD and AVX.       
     """)
-    st.code("""
-            INSERT INTO embeddings (Id, ProductId, UserId, score, summary, text, combined, vector)
-            VALUES (?, ?, ?, ?, ?, ?, ?, CAST(CAST(? AS VARCHAR(MAX)) AS VECTOR(1536)))
-            """)
+
 # Upload pre-generated embeddings CSV file
 uploaded_embeddings_file = st.file_uploader("Upload the CSV file with pre-generated embeddings", type="csv")
 if uploaded_embeddings_file is not None:
@@ -279,9 +283,8 @@ if uploaded_embeddings_file is not None:
             st.error(f"An error occurred: {e}")
 
 
-
-# Section 5: Add two buttons for displaying search results and generated response
-st.subheader("Step 5: Perform Vector Search and Generate Completion")
+# Section 5: Perform Vector Search and display results
+st.subheader("Step 5: Perform Vector Search")
 
 with st.expander("**Vector Search and Completion**"):
     st.markdown(""" 
@@ -294,29 +297,12 @@ Then we can use that vector to calculate the **cosine distance** against all the
 **SQL Query:**
                 """)
     st.code("""
-            SELECT TOP(?) ProductId, Summary, text,
-           1 - vector_distance('cosine', cast(? as vector(1536)), [vector]) AS similarity_score
-    FROM dbo.embeddings
-    ORDER BY similarity_score desc
-    """)
-
-with st.expander("**Augment LLM Generation**"):
-    st.markdown("""
-    A helper function is created to feed prompts into the **OpenAI Completions model** & create interactive loop where you can pose questions to the model and receive information grounded in your data.
-
-The function `generate_completion` is defined to help ground the GPT 4.1 model with prompts and system instructions. 
-We are passing the results of the `vector_search_sql` function to the model and we define the system prompt as follows:
-                """)
-    st.code("""
-            '''You are an intelligent & funny assistant who will exclusively answer based on the data provided in the `search_results`:
-- Use the information from `search_results` to generate your responses. If the data is not a perfect match for the user's query, use your best judgment to provide helpful suggestions and include the following format:
-  Product ID: {product_id}
-  Summary: {summary}
-  Review: {text}
-  Similarity Score: {similarity_score}
-- Avoid any other external data sources.
-- Add a fun fact related to the overall product searched at the end of the recommendations.''' 
+           SELECT TOP(?) ProductId, Summary, text,               
+                VECTOR_DISTANCE('cosine', @e, Vector) AS Distance
+            FROM dbo.embeddings
+            ORDER BY Distance;
             """)
+
 
 # Input fields for vector search and completion
 user_query = st.text_input("Enter your search query")
@@ -340,6 +326,42 @@ def vector_search_sql(query, num_results):
     results = cursor.fetchall()
     conn.close()
     return results
+
+if st.button("Vector Search"):
+    if user_query:
+        try:
+            # Perform vector search
+            search_results = vector_search_sql(user_query, num_results)
+            for result in search_results:
+                st.write(f"Product ID: {result[0]}")
+                st.write(f"Summary: {result[1]}")
+                st.write(f"Text: {result[2]}")
+                st.write(f"Similarity Score: {result[3]}\n")
+                st.write("---------------------------------------")
+        except Exception as e:
+            st.error(f"An error occurred: {e}")
+    else:
+        st.error("Please enter a search query.")
+
+# Section 6: Perform chat completion with the search query and vector search results
+st.subheader("Step 6: Augument LLM Generation")
+with st.expander("**Augment LLM Generation**"):
+    st.markdown("""
+    A helper function is created to feed prompts into the **OpenAI Completions model** & create interactive loop where you can pose questions to the model and receive information grounded in your data.
+
+The function `generate_completion` is defined to help ground the GPT 4.1 model with prompts and system instructions. 
+We are passing the results of the `vector_search_sql` function to the model and we define the system prompt as follows:
+                """)
+    st.code("""
+            '''You are an intelligent & funny assistant who will exclusively answer based on the data provided in the `search_results`:
+- Use the information from `search_results` to generate your responses. If the data is not a perfect match for the user's query, use your best judgment to provide helpful suggestions and include the following format:
+  Product ID: {product_id}
+  Summary: {summary}
+  Review: {text}
+  Similarity Score: {similarity_score}
+- Avoid any other external data sources.
+- Add a fun fact related to the overall product searched at the end of the recommendations.''' 
+            """)
 
 # Define the Azure OpenAI client
 client = AzureOpenAI(
@@ -396,14 +418,6 @@ if st.button("Generate Response"):
         try:
             # Perform vector search
             search_results = vector_search_sql(user_query, num_results)
-            with st.expander("**Vector Search Results**"):
-                for result in search_results:
-                    st.write(f"Product ID: {result[0]}")
-                    st.write(f"Summary: {result[1]}")
-                    st.write(f"Text: {result[2]}")
-                    st.write(f"Similarity Score: {result[3]}\n")
-                    st.write("---------------------------------------")
-
             completion_response = generate_completion(search_results, user_query)
 
             # Display the generated response
