@@ -32,7 +32,7 @@ st.markdown(
 # Move configuration requirements to a collapsible sidebar
 with st.sidebar:
     st.header("Configuration Requirements")
-    st.text_input("Azure SQL Database Connection String", placeholder="Enter your SQL connection string", key="sql_connection_string")
+    st.text_input("Azure SQL Database Connection String", placeholder="Enter your SQL connection string", key="sql_connection_string", help="ODBC Connection string needs to be used. Do update the password parameter in the string with your password.")
     st.text_input("Azure Entra ID Connection String (Optional)", placeholder="Enter your Entra ID connection string", key="entra_connection_string")
     st.text_input("Azure OpenAI Endpoint", placeholder="https://<your-resource-name>.openai.azure.com/", key="openai_endpoint")
     st.text_input("Azure OpenAI API Key", type="password", key="openai_api_key")
