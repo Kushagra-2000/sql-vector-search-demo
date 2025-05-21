@@ -358,7 +358,7 @@ with st.expander("**Vector Embedding Storage in Azure SQL Database**"):
     st.markdown("""
     We will insert our vectors into the SQL Table now. The table embeddings has a column called **vector** which is vector(1536) type.
 
-    We will pass the vectors by converting a JSON array to a compact **binary** representation of a vector. Vectors are stored in an efficient binary format that also enables usage of dedicated CPU vector processing extensions like SIMD and AVX.       
+    Vectors are stored in an efficient binary format that also enables usage of dedicated CPU vector processing extensions like SIMD and AVX.       
     """)
     st.code("""
             INSERT INTO resumedocs (chunkid, filename, chunk, embedding)
