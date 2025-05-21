@@ -54,6 +54,41 @@ This includes ARM templates to provision:
 
 ---
 
+## Deploy the App on Azure App Services
+
+To deploy a Streamlit application on Azure App Service, follow these steps:  
+1. Create an Azure App Service with B1 SKU or higher, as the free version does not support Streamlit.
+2. Choose Python v3.10 or above for Streamlit in the App Service.
+3. Choose Linux as the operating system for the App Service.
+4. Make sure your code folder has a `requirements.txt` file with all the dependencies.
+5. Add two files, `streamlit.sh` and `.deployment`, to the root directory of your project.
+   - streamlit.sh
+     ```
+     pip install -r requirements.txt  
+     python -m streamlit run app.py --server.port 8000 --server.address 0.0.0.0  
+     ```
+   - .deployment
+     ```
+     [config]  
+     SCM_DO_BUILD_DURING_DEPLOYMENT=false
+     ```
+   - Replace `app.py` with your application name.
+   - Use port 8000 because Azure App Service by default exposes only 8000 and 443 ports.  
+6. Open Visual Studio Code and install the Azure Extension Pack.
+7. Log in to Visual Studio Code with your Azure account.
+8. Use the `Azure App Service: Deploy to Web App` command in Visual Studio Code and select your App Service name.
+9. Wait for deployment to be finished.
+10. Go to the Azure portal and update the `Startup Command` configuration for the App Service and set the value to `bash /home/site/wwwroot/streamlit.sh`.
+    - You can find this configuration inside `App Service > Settings > Configurations > General settings`.
+11. Wait for some seconds and visit the application URL. Congratulations! You have successfully deployed your Streamlit application to the Azure App Service.
+
+Refer to following resources for any further clarification:
+- [Learn Microsoft | Answers](https://learn.microsoft.com/en-us/answers/questions/1470782/how-to-deploy-a-streamlit-application-on-azure-app#:~:text=Deploying%20Streamlit%20Application%20on%20Azure%20App%20Service)
+- [Tech Community Microsoft](https://techcommunity.microsoft.com/blog/appsonazureblog/deploy-streamlit-on-azure-web-app/4276108)
+
+
+---
+
 ## What Next?
 
 Once you've successfully deployed and explored the Streamlit applications, here are some next steps to deepen your understanding and expand your solution:
