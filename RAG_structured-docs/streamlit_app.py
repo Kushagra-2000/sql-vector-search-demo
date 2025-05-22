@@ -32,7 +32,8 @@ st.markdown(
 # Move configuration requirements to a collapsible sidebar
 with st.sidebar:
     st.header("Configuration Requirements")
-    st.text_input("Azure SQL Database Connection String", placeholder="Enter your SQL connection string", key="sql_connection_string", help="ODBC Connection string needs to be used. Do update the password parameter in the string with your password.")
+    st.text_input("Azure SQL Database Connection String", placeholder="Enter your SQL connection string", key="sql_connection_string", 
+                  help="ODBC Connection string needs to be used. Do update the password parameter in the string with your password.")
     st.text_input("Azure Entra ID Connection String (Optional)", placeholder="Enter your Entra ID connection string", key="entra_connection_string")
     st.text_input("Azure OpenAI Endpoint", placeholder="https://<your-resource-name>.openai.azure.com/", key="openai_endpoint")
     st.text_input("Azure OpenAI API Key", type="password", key="openai_api_key")
@@ -160,21 +161,22 @@ with st.expander("**Dataset Processing**"):
 
 uploaded_file = st.file_uploader("Upload the CSV file for embedding generation", type="csv")
 if uploaded_file is not None:
-    df = pd.read_csv(uploaded_file)
+    # Only reload DataFrame if file changes
+    if 'uploaded_df' not in st.session_state or st.session_state.get('last_uploaded_file') != uploaded_file.name:
+        df = pd.read_csv(uploaded_file)
+        required_columns = ["Id", "Time", "ProductId", "UserId", "Score", "Summary", "Text"]
+        df = df[required_columns]
+        df["combined"] = df["Summary"].str.strip() + ": " + df["Text"].str.strip()
+        st.session_state['uploaded_df'] = df
+        st.session_state['last_uploaded_file'] = uploaded_file.name
+        st.session_state['embeddings_df'] = None  # Reset embeddings if new file
+        st.session_state['search_results'] = None
+    else:
+        df = st.session_state['uploaded_df']
     st.write("Preview of Uploaded Dataset:")
     st.dataframe(df.head())
-
-    # Retain only the specified columns
-    required_columns = ["Id", "Time", "ProductId", "UserId", "Score", "Summary", "Text"]
-    df = df[required_columns]
-
-    # Create the 'combined' column
-    df["combined"] = df["Summary"].str.strip() + ": " + df["Text"].str.strip()
-
     st.write("Processed Dataset:")
     st.dataframe(df.head())
-
-
 
 # Section 3: Generate and display Embeddings for the first 10 rows of the DataFrame
 st.subheader("Step 3: Generate Embeddings")
@@ -196,7 +198,7 @@ def get_embedding(text):
     """
     Get sentence embedding using the Azure OpenAI text-embedding-small model.
     """
-    openai_url = os.environ.get('AZURE_OPENAI_ENDPOINT') + f"/openai/deployments/{os.environ.get('AZURE_OPENAI_EMBEDDING_MODEL_DEPLOYMENT_NAME')}/embeddings?api-version=2024-12-01-preview"
+    openai_url = os.environ.get('AZURE_OPENAI_ENDPOINT') + "/openai/deployments/text-embedding-3-small/embeddings?api-version=2024-12-01-preview"
     response = requests.post(
         openai_url,
         headers={"api-key": os.environ.get('AZURE_OPENAI_API_KEY'), "Content-Type": "application/json"},
@@ -208,23 +210,20 @@ def generate_embeddings(df):
     """
     Generate embeddings for the first 10 rows of the DataFrame.
     """
-    df = df.head(10).copy()  # Ensure a copy is made to avoid SettingWithCopyWarning
-    df.loc[:, "vector"] = df["combined"].apply(get_embedding)  # Use .loc for assignment
+    df = df.head(10).copy()  
+    df.loc[:, "vector"] = df["combined"].apply(get_embedding)  
     return df
 
-if st.button("Generate Embeddings"):
-    if uploaded_file is not None:
-        try:
-            df = generate_embeddings(df)
-            st.success("Embeddings generated successfully!")
-            st.dataframe(df.head(10))
-
-        except Exception as e:
-            st.error(f"An error occurred: {e}")
-    else:
-        st.error("Please upload a dataset first.")
-
-
+if uploaded_file is not None:
+    if st.button("Generate Embeddings") or st.session_state.get('embeddings_df') is not None:
+        if st.session_state.get('embeddings_df') is None:
+            df = st.session_state['uploaded_df']
+            embeddings_df = generate_embeddings(df)
+            st.session_state['embeddings_df'] = embeddings_df
+        else:
+            embeddings_df = st.session_state['embeddings_df']
+        st.success("Embeddings generated successfully!")
+        st.dataframe(embeddings_df.head(10))
 
 # Section 4: Upload Pre-Generated Embeddings to Database
 st.subheader("Step 4: Upload Pre-Generated Embeddings")
@@ -235,7 +234,7 @@ with st.expander("**Vector Embedding Storage in Azure SQL Database**"):
 
     We will insert our vectors into the SQL Table now. The table embeddings has a column called **vector** which is vector(1536) type.
 
-    Vectors are stored in an efficient binary format that also enables usage of dedicated CPU vector processing extensions like SIMD and AVX.       
+    We will pass the vectors by converting a JSON array to a compact **binary** representation of a vector. Vectors are stored in an efficient binary format that also enables usage of dedicated CPU vector processing extensions like SIMD and AVX.       
     """)
 
 # Upload pre-generated embeddings CSV file
@@ -283,6 +282,7 @@ if uploaded_embeddings_file is not None:
             st.error(f"An error occurred: {e}")
 
 
+
 # Section 5: Perform Vector Search and display results
 st.subheader("Step 5: Perform Vector Search")
 
@@ -327,21 +327,26 @@ def vector_search_sql(query, num_results):
     conn.close()
     return results
 
+# Only run vector search when the button is pressed, not on every rerun
 if st.button("Vector Search"):
     if user_query:
-        try:
-            # Perform vector search
-            search_results = vector_search_sql(user_query, num_results)
-            for result in search_results:
-                st.write(f"Product ID: {result[0]}")
-                st.write(f"Summary: {result[1]}")
-                st.write(f"Text: {result[2]}")
-                st.write(f"Similarity Score: {result[3]}\n")
-                st.write("---------------------------------------")
-        except Exception as e:
-            st.error(f"An error occurred: {e}")
+        search_results = vector_search_sql(user_query, num_results)
+        st.session_state['search_results'] = search_results
+        st.session_state['last_user_query'] = user_query
+        st.session_state['last_num_results'] = num_results
     else:
         st.error("Please enter a search query.")
+
+# Display results only if they exist in session state (from button press)
+if st.session_state.get('search_results') is not None:
+    search_results = st.session_state['search_results']
+    for result in search_results:
+        st.write(f"Product ID: {result[0]}")
+        st.write(f"Summary: {result[1]}")
+        st.write(f"Text: {result[2]}")
+        st.write(f"Similarity Score: {result[3]}\n")
+        st.write("---------------------------------------")
+
 
 # Section 6: Perform chat completion with the search query and vector search results
 st.subheader("Step 6: Augument LLM Generation")
@@ -416,11 +421,20 @@ def generate_completion(search_results, user_query):
 if st.button("Generate Response"):
     if user_query:
         try:
-            # Perform vector search
-            search_results = vector_search_sql(user_query, num_results)
-            completion_response = generate_completion(search_results, user_query)
+            # Use cached search results if available and query/num_results unchanged
+            if (
+                st.session_state.get('search_results') is not None and
+                st.session_state.get('last_user_query') == user_query and
+                st.session_state.get('last_num_results') == num_results
+            ):
+                search_results = st.session_state['search_results']
+            else:
+                search_results = vector_search_sql(user_query, num_results)
+                st.session_state['search_results'] = search_results
+                st.session_state['last_user_query'] = user_query
+                st.session_state['last_num_results'] = num_results
 
-            # Display the generated response
+            completion_response = generate_completion(search_results, user_query)
             st.write("Generated Response:")
             st.write(completion_response['choices'][0]['message']['content'])
         except Exception as e:
