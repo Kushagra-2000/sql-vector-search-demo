@@ -49,7 +49,7 @@ This includes ARM templates to provision:
    ```
 5. Run Streamlit App
    ```
-   streamlit run <filename.py>
+   streamlit run <filename> --server.maxUploadSize 500
    ```
 
 ---
