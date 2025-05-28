@@ -115,6 +115,22 @@ Once you've successfully deployed and explored the Streamlit applications, here 
 
 ---
 
+## Troubleshooting
+- **Connection Errors:**
+  - Ensure your SQL connection string is correct and the ODBC driver is installed.
+  - Verify API keys and endpoints for Azure services.
+- **Table Creation Issues:**
+  - Confirm your user has permissions to create tables in the target database.
+  - If using the database for the first time or it is in Paused state, try creating table again after the database is in Running state - it would take 1-2 mins for DB to be ready, if in paused state.
+- **Embedding/Vector Errors:**
+  - Use the correct double-casting in SQL queries as shown in the app.
+- **Performance:**
+  - Large PDFs or many files may take time to process and embed. Monitor resource usage.
+- **Streamlit UI Issues:**
+  - Refresh the page or restart the app if UI elements do not update as expected.
+
+---
+
 ## 📚 Resources
 
 - [Azure SQL DB Vector Support](https://devblogs.microsoft.com/azure-sql/eap-for-vector-support-refresh-introducing-vector-type/)
