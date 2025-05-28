@@ -12,6 +12,7 @@ from openai import AzureOpenAI
 import pyodbc
 import struct
 from azure.identity import DefaultAzureCredential
+from azure.identity import InteractiveBrowserCredential
 
 # Adjust the layout to make the main window wide
 st.set_page_config(page_title="RAG with Azure SQL and OpenAI")
@@ -34,12 +35,16 @@ st.markdown(
 with st.sidebar:
     st.subheader('🔒 Configuration Strings (Session Only)')
     st.markdown('Enter your Azure SQL / DocIntelligence / OpenAI credentials. These are only stored for this session and never saved.')
+    SQL_CONNECTION_STRING = st.text_input('SQL Connection String', placeholder="Enter your Azure SQL connection string", type='default', key='sql_conn', 
+                                          help="ODBC Connection string needs to be used. Do update the password parameter in the string with your password.")
+    ENTRA_CONNECTION_STRING = st.text_input("Azure Entra ID Connection String (Optional)", placeholder="Enter your Entra ID connection string", key="entra_connection_string")
     AZUREDOCINTELLIGENCE_ENDPOINT = st.text_input('Azure Document Intelligence Endpoint', type='default', key='docint_endpoint')
     AZUREDOCINTELLIGENCE_API_KEY = st.text_input('Azure Document Intelligence API Key', type='password', key='docint_key')
     AZOPENAI_ENDPOINT = st.text_input('Azure OpenAI Endpoint', type='default', key='openai_endpoint')
-    AZOPENAI_API_KEY = st.text_input('Azure OpenAI API Key', type='password', key='openai_key')
-    SQL_CONNECTION_STRING = st.text_input('SQL Connection String', type='default', key='sql_conn', 
-                                          help="ODBC Connection string needs to be used. Do update the password parameter in the string with your password.")
+    AZOPENAI_API_KEY = st.text_input('Azure OpenAI API Key', type='password', key='openai_key') 
+    st.text_input("Embedding Model Deployment Name", value="text-embedding-3-small", key="embedding_model")
+    st.text_input("Chat Completion Model Name", value="gpt-4.1", key="gpt-4.1")
+
 
 # Store config in session state for use throughout the app
 st.session_state['AZUREDOCINTELLIGENCE_ENDPOINT'] = AZUREDOCINTELLIGENCE_ENDPOINT
@@ -47,6 +52,7 @@ st.session_state['AZUREDOCINTELLIGENCE_API_KEY'] = AZUREDOCINTELLIGENCE_API_KEY
 st.session_state['AZOPENAI_ENDPOINT'] = AZOPENAI_ENDPOINT
 st.session_state['AZOPENAI_API_KEY'] = AZOPENAI_API_KEY
 st.session_state['SQL_CONNECTION_STRING'] = SQL_CONNECTION_STRING
+st.session_state['ENTRA_CONNECTION_STRING'] = ENTRA_CONNECTION_STRING
 
 # Helper to get config from session state
 get_config = lambda k: st.session_state.get(k, '')
@@ -69,10 +75,21 @@ def get_openai_key():
 # SQL DB connection helper
 def get_mssql_connection():
     sql_connection_string = get_config('SQL_CONNECTION_STRING')
-    if sql_connection_string:
+    entra_connection_string = get_config('ENTRA_CONNECTION_STRING')
+
+    if entra_connection_string:
+        credential = InteractiveBrowserCredential()
+        # credential = DefaultAzureCredential(exclude_interactive_browser_credential=False)
+        token = credential.get_token('https://database.windows.net/.default')
+        token_bytes = token.token.encode('UTF-16LE')
+        token_struct = struct.pack(f'<I{len(token_bytes)}s', len(token_bytes), token_bytes)
+        SQL_COPT_SS_ACCESS_TOKEN = 1256
+        conn = pyodbc.connect(entra_connection_string, attrs_before={SQL_COPT_SS_ACCESS_TOKEN: token_struct})
+    elif sql_connection_string:
         conn = pyodbc.connect(sql_connection_string)
     else:
-        raise ValueError("No valid SQL connection string found in the configuration.")
+        raise ValueError("No valid connection string found.")
+    
     return conn
 
 # PDF extraction
@@ -241,7 +258,7 @@ st.title("RAG Resume Matcher with Azure SQL DB, Document Intelligence, and OpenA
 st.markdown("In this tutorial we will be using [PDF resumes from Kaggle](https://www.kaggle.com/datasets/snehaanbhawal/resume-dataset), " \
 "extract and chunk its text, generate its embeddings, store/query in Azure SQL DB, and perform Q&A using LLM.  \nFor detailed explanation, " \
 "please refer to the [GitHub repo](https://github.com/Azure-Samples/azure-sql-db-vector-search/tree/main/RAG-with-Documents).")
-st.markdown("**Note:** This is a demo app. Please do not use it for production purposes. The credentials are stored in session state and are not secure. ")
+st.markdown("**Note:** This is a demo app. Please do not use it for production purposes. ")
 
 # Step 1: Check/Create Table
 st.subheader("Step 1: SQL Database Table Creation")
@@ -358,12 +375,12 @@ with st.expander("**Vector Embedding Storage in Azure SQL Database**"):
     st.markdown("""
     We will insert our vectors into the SQL Table now. The table embeddings has a column called **vector** which is vector(1536) type.
 
-    Vectors are stored in an efficient binary format that also enables usage of dedicated CPU vector processing extensions like SIMD and AVX.       
+    We will pass the vectors by converting a JSON array to a compact **binary** representation of a vector. Vectors are stored in an efficient binary format that also enables usage of dedicated CPU vector processing extensions like SIMD and AVX.       
     """)
-    st.code("""
-            INSERT INTO resumedocs (chunkid, filename, chunk, embedding)
-            VALUES (?, ?, ?, CAST(CAST(? AS NVARCHAR(MAX)) AS VECTOR(1536)))
-            """)
+    # st.code("""
+    #         INSERT INTO resumedocs (chunkid, filename, chunk, embedding)
+    #         VALUES (?, ?, ?, CAST(CAST(? AS NVARCHAR(MAX)) AS VECTOR(1536)))
+    #         """)
 if st.session_state.get('result_df') is not None:
     if st.button("Insert Embeddings into Azure SQL DB") or st.session_state.get('insert_status') is not None:
         if st.session_state.get('insert_status') is None:
@@ -387,8 +404,7 @@ Then we can use that vector to calculate the **cosine distance** against all the
                 """)
     st.code("""
             SELECT TOP (?) filename, chunkid, chunk,
-           1-vector_distance('cosine', CAST(CAST(? AS NVARCHAR(MAX)) AS VECTOR(1536)), embedding) AS similarity_score,
-           vector_distance('cosine', CAST(CAST(? AS NVARCHAR(MAX)) AS VECTOR(1536)), embedding) AS distance_score
+           VECTOR_DISTANCE('cosine', @e, Vector) AS distance_score,
     FROM dbo.resumedocs
     ORDER BY distance_score
     """)
