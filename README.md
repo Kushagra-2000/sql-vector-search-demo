@@ -40,17 +40,31 @@ This includes ARM templates to provision:
 
 ## Run the Application
 
-1. Clone the Repository
-2. Navigate to corresponding repository depending upon structured or unstructured dataset.
-3. Deploy required resources with one click deployment templates.
-4. Install requirements
+1. **Clone the Repository**
+2. **Navigate** to corresponding repository depending upon structured or unstructured dataset.
+3. **Install Requirements:**
    ```
    pip install -r requirements.txt
    ```
-5. Run Streamlit App
-   ```
-   streamlit run <filename> --server.maxUploadSize 500
-   ```
+4. **Deploy Azure Resources:**
+   - Use the provided ARM templates or Azure Portal to deploy SQL DB, Document Intelligence, and OpenAI resources.
+   - Setup SQL on Fabric if using that as the database
+5. **Setup Firewall Configuration:** (Skip this step if using SQL on Fabric)
+   - Configure the firewall settings for the SQL server separately to allow access from your client IP addresses.
+   - Go to the deployed SQL Server in the Azure Portal.
+   - Navigate to Security > Networking > Virtual networks.
+   - Add your client IP and click Save.
+6. **Run the Streamlit App:**
+   - Navigate to the cloned repository destination and then run the below command to start the app on `localhost:8501`
+     ```
+     streamlit run <filename.py> --server.maxUploadSize 500
+     ```
+7. **Configure Credentials:**
+   - Launch the app and enter your Azure endpoints, API keys, and SQL connection string in the sidebar.
+   - Credentials for Document Intelligence: Document Intelligence resource > Overview > Keys and endpoint
+   - Credentials for OpenAI: OpenAI resource > Overview > Develop > Keys and endpoint
+   - Connection String for Azure SQL DB: Azure SQL DB resource > Overview > Show database connection strings > ODBC > {Change Pwd parameter with your admin password set during deployment}
+   - Connection String for SQL on Fabric: SQL DB > Settings > Connection Strings > ODBC > Copy string as it is > Authentication window would pop-up > Provide authentication details
 
 ---
 
