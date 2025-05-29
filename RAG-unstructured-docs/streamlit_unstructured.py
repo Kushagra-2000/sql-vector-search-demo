@@ -22,10 +22,11 @@ st.markdown(
     """
     <style>
     [data-testid="stExpander"] {
-        background-color: #f4f1ff; 
+        background-color: #f4f1ff;
         border-radius: 5px;
         color: #000;
     }
+    /* Remove any overflow: hidden or similar rules that could break scrolling */
     </style>
     """,
     unsafe_allow_html=True
