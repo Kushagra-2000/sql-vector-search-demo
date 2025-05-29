@@ -15,12 +15,15 @@ from azure.identity import DefaultAzureCredential
 from azure.identity import InteractiveBrowserCredential
 
 # Adjust the layout to make the main window wide
-st.set_page_config(page_title="RAG with Azure SQL and OpenAI")
+st.set_page_config(layout="wide", page_title="RAG with Azure SQL and OpenAI")
 
-# Update custom CSS for styling expander elements
+# Custom CSS to style the Streamlit app
 st.markdown(
     """
     <style>
+    .main {
+        overflow-y: auto !important;
+    }
     [data-testid="stExpander"] {
         background-color: #f4f1ff;
         border-radius: 5px;
@@ -259,7 +262,10 @@ st.title("RAG Resume Matcher with Azure SQL DB, Document Intelligence, and OpenA
 st.markdown("In this tutorial we will be using [PDF resumes from Kaggle](https://www.kaggle.com/datasets/snehaanbhawal/resume-dataset), " \
 "extract and chunk its text, generate its embeddings, store/query in Azure SQL DB, and perform Q&A using LLM.  \nFor detailed explanation, " \
 "please refer to the [GitHub repo](https://github.com/Azure-Samples/azure-sql-db-vector-search/tree/main/RAG-with-Documents).")
-st.markdown("**Note:** This is a demo app. Please do not use it for production purposes. ")
+st.markdown("""**Note:** This is a demo app. Please do not use it for production purposes.  
+            Do check for the Firewall setup in your Azure SQL Database. You can use the [Azure Portal](https://portal.azure.com/) to configure the firewall settings to allow access from your IP address. 
+            Steps to configure the firewall can be found [here](https://github.com/Kushagra-2000/sql-vector-search-demo/blob/main/README.md#:~:text=Setup%20Firewall%20Configuration).
+            """)
 
 # Step 1: Check/Create Table
 st.subheader("Step 1: SQL Database Table Creation")
@@ -274,7 +280,7 @@ with st.expander("**Table Creation Process**"):
             chunkid NVARCHAR(255),
             filename NVARCHAR(255),
             chunk NVARCHAR(MAX),
-            embedding VECTOR(1536)
+            'embedding VECTOR(1536)'
         )
     END
     """)
@@ -307,12 +313,15 @@ if uploaded_files:
     if st.session_state.get('last_uploaded_files') != [f.name for f in uploaded_files]:
         # Only process if new files are uploaded
         all_data = []
+        status_placeholder = st.empty()  # Placeholder for status messages
+        total_chunks = 0
         for file in uploaded_files:
-            st.write(f"Processing: {file.name}")
+            status_placeholder.info(f"Processing: {file.name}")
             text = extract_text_from_pdf(file)
             cleaned = clean_text(text)
             chunks = split_text_into_token_chunks(cleaned)
-            st.success(f"Extracted {len(chunks)} chunks from {file.name}")
+            total_chunks += len(chunks)
+            status_placeholder.success(f"Extracted {len(chunks)} chunks from {file.name}")
             for chunk_id, chunk in enumerate(chunks):
                 chunk_text = chunk.strip() if chunk.strip() else "NULL"
                 unique_chunk_id = f"{file.name}_{chunk_id}"
@@ -327,10 +336,12 @@ if uploaded_files:
         st.session_state['result_df'] = None  # Reset embeddings if new files
         st.session_state['insert_status'] = None
         st.session_state['last_uploaded_files'] = [f.name for f in uploaded_files]
+        # After processing all files, show a summary success message
+        status_placeholder.success(f"Processed {len(uploaded_files)} file(s) and extracted a total of {total_chunks} text chunks.")
     else:
         df = st.session_state['df']
     st.write("Preview of processed dataset:")
-    st.dataframe(df.head())
+    st.dataframe(df.head(6), height=250)
 
 # Step 3: Generate embeddings
 st.subheader("Step 3: Embedding Generation")
